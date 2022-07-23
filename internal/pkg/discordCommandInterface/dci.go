@@ -3,6 +3,7 @@ package discordCommandInterface
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -16,7 +17,6 @@ import (
 // Bot parameters
 var (
 	GuildID        = flag.String("guild", "", "Test guild ID. If not passed - bot registers commands globally")
-	BotToken       = flag.String("token", "", "Bot access token")
 	RemoveCommands = flag.Bool("rmcmd", true, "Remove all commands after shutdowning or not")
 )
 
@@ -27,7 +27,7 @@ func InitializeDiscordServer(c context.Context) (*discordgo.Session, error) {
 
 	botToken := c.Value(constants.BotTokenHeader)
 	var err error
-	s, err = discordgo.New("Bot " + botToken)
+	s, err = discordgo.New("Bot " + fmt.Sprint(botToken))
 	if err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
@@ -87,4 +87,6 @@ func ReadWriteMethod(ctx context.Context, s *discordgo.Session) error {
 	}
 
 	log.Println("Gracefully shutting down.")
+
+	return nil
 }

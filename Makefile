@@ -38,3 +38,8 @@ fmt:
 .PHONY: build
 build:
 	go build -ldflags="-w -s" -o bin/app ./...
+
+## run: run locally
+.PHONY: run
+run:
+	go run ./...

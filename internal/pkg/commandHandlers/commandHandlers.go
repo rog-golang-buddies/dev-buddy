@@ -11,6 +11,17 @@ import (
 
 var (
 	CommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		// "get-issues": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// 	// this is where the call to your broker is made
+		// 	// after the broker call is returned
+
+		// 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 		Data: &discordgo.InteractionResponseData{
+		// 			Content: "Hey there! Congratulations, this is the list of all issues",
+		// 		},
+		// 	})
+		// },
 		"basic-command": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

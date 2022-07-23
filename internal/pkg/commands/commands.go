@@ -5,6 +5,19 @@ import "github.com/bwmarrin/discordgo"
 var (
 	integerOptionMinValue = 1.0
 	Commands              = []*discordgo.ApplicationCommand{
+		// {
+		// 	Name:        "basic-command",
+		// 	Description: "Command to get all the issues of a repository",
+		// 	Options: []*discordgo.ApplicationCommandOption{
+
+		// 		{
+		// 			Type:        discordgo.ApplicationCommandOptionString,
+		// 			Name:        "Repository",
+		// 			Description: "Name of the repository",
+		// 			Required:    true,
+		// 		},
+		// 	},
+		// },
 		{
 			Name: "basic-command",
 			// All commands and options must have a description
