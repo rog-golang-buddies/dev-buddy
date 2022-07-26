@@ -75,6 +75,8 @@ func CommandTranslation(command string, brokerContext context.Context) (models.D
 
 func splitString(command string) []string {
 	lowerCaseCommand := strings.ToLower(command)
+
 	words := strings.Fields(lowerCaseCommand)
+
 	return words
 }

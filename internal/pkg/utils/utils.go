@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"log"
 
 	"github.com/rog-golang-buddies/dev-buddy/internal/pkg/config"
 	"github.com/rog-golang-buddies/dev-buddy/internal/pkg/constants"
@@ -18,9 +17,6 @@ func SetContext() (context.Context, error) {
 	if err := envconfig.Process(ctx, &configValues); err != nil {
 		return ctx, err
 	}
-
-	log.Print(configValues.GithubPAT)
-	log.Print(configValues.DiscordToken)
 
 	// setting the discord token value to context
 	ctx = context.WithValue(ctx, constants.BotTokenHeader, configValues.DiscordToken)

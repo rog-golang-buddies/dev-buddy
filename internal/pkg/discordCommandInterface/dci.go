@@ -74,7 +74,8 @@ func messageRead(s *discordgo.Session, m *discordgo.MessageCreate) {
 		sentMessage, _ := s.ChannelMessageSend(m.ChannelID, resp.Content)
 		if len(resp.Reactions) > 0 {
 			for _, reaction := range resp.Reactions {
-				err = s.MessageReactionAdd(m.ChannelID, sentMessage.ID, reaction.Emoji.ID)
+				fmt.Print(reaction.Emoji.Name)
+				err = s.MessageReactionAdd(m.ChannelID, sentMessage.ID, reaction.Emoji.Name)
 				if err != nil {
 					log.Fatal(err)
 				}

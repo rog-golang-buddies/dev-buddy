@@ -9,3 +9,7 @@ type DiscordResponses struct {
 type DiscordReactions struct {
 	Reactions []discordgo.MessageReaction
 }
+
+type DiscordEmojis struct {
+	Emojis []discordgo.Emoji
+}
