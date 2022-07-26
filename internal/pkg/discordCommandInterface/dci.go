@@ -2,91 +2,93 @@ package discordCommandInterface
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/rog-golang-buddies/dev-buddy/internal/pkg/commandHandlers"
-	"github.com/rog-golang-buddies/dev-buddy/internal/pkg/commands"
 	"github.com/rog-golang-buddies/dev-buddy/internal/pkg/constants"
+	"github.com/rog-golang-buddies/dev-buddy/internal/pkg/utils"
 )
-
-// Bot parameters
-var (
-	GuildID        = flag.String("guild", "", "Test guild ID. If not passed - bot registers commands globally")
-	RemoveCommands = flag.Bool("rmcmd", true, "Remove all commands after shutdowning or not")
-)
-
-var s *discordgo.Session
 
 func InitializeDiscordServer(c context.Context) (*discordgo.Session, error) {
-	flag.Parse()
-
 	botToken := c.Value(constants.BotTokenHeader)
-	var err error
-	s, err = discordgo.New("Bot " + fmt.Sprint(botToken))
+
+	// Create a new Discord session using the provided bot token.
+	dg, err := discordgo.New("Bot " + fmt.Sprint(botToken))
 	if err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
+		return nil, err
 	}
 
-	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := commandHandlers.CommandHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
-		}
-	})
+	// Register the messageCreate func as a callback for MessageCreate events.
+	dg.AddHandler(messageRead)
 
-	return s, nil
+	// In this example, we only care about receiving message events.
+	dg.Identify.Intents = discordgo.IntentsGuildMessages
+
+	return dg, nil
 }
 
-func ReadWriteMethod(ctx context.Context, s *discordgo.Session) error {
-	s.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
-	})
-	err := s.Open()
+func StartListening(dg *discordgo.Session) error {
+	// Open a websocket connection to Discord and begin listening.
+	err := dg.Open()
 	if err != nil {
-		log.Fatalf("Cannot open the session: %v", err)
+		log.Fatal("error opening connection,", err)
+		return err
 	}
 
-	log.Println("Adding commands...")
-	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands.Commands))
-	for i, v := range commands.Commands {
-		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, *GuildID, v)
-		if err != nil {
-			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
-		}
-		registeredCommands[i] = cmd
+	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	// Cleanly close down the Discord session.
+	dg.Close()
+
+	return nil
+}
+
+// This function will be called (due to AddHandler above) every time a new
+// message is created on any channel that the authenticated bot has access to.
+func messageRead(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Ignore all messages created by the bot itself
+	// This isn't required in this specific example but it's a good practice.
+	if m.Author.ID == s.State.User.ID {
+		return
 	}
-
-	defer s.Close()
-
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-	log.Println("Press Ctrl+C to exit")
-	<-stop
-
-	if *RemoveCommands {
-		log.Println("Removing commands...")
-		// // We need to fetch the commands, since deleting requires the command ID.
-		// // We are doing this from the returned commands on line 375, because using
-		// // this will delete all the commands, which might not be desirable, so we
-		// // are deleting only the commands that we added.
-		// registeredCommands, err := s.ApplicationCommands(s.State.User.ID, *GuildID)
-		// if err != nil {
-		// 	log.Fatalf("Could not fetch registered commands: %v", err)
-		// }
-
-		for _, v := range registeredCommands {
-			err := s.ApplicationCommandDelete(s.State.User.ID, *GuildID, v.ID)
-			if err != nil {
-				log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
+	brokerContext, err := utils.SetContext()
+	if err != nil {
+		log.Fatal(err)
+	}
+	response, err := commandHandlers.CommandTranslation(m.Content, brokerContext)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, resp := range response.Responses {
+		sentMessage, _ := s.ChannelMessageSend(m.ChannelID, resp.Content)
+		if len(resp.Reactions) > 0 {
+			for _, reaction := range resp.Reactions {
+				err = s.MessageReactionAdd(m.ChannelID, sentMessage.ID, reaction.Emoji.ID)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	}
 
-	log.Println("Gracefully shutting down.")
+	// If the message is "ping" reply with "Pong!"
+	// if m.Content == "ping" {
+	// 	s.ChannelMessageSend(m.ChannelID, "Pong!")
+	// }
 
-	return nil
+	// If the message is "pong" reply with "Ping!"
+	// if m.Content == "pong" {
+	// 	s.ChannelMessageSend(m.ChannelID, "Ping!")
+	// }
 }
